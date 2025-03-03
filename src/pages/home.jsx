@@ -2,16 +2,19 @@ import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   FlatList,
   StyleSheet,
 } from "react-native";
-import { fetchAllTasks, addTask, deleteTask } from "../db/db";
+import { fetchAllTasks, addTask, deleteTask, initDB } from "../db/db";
+import { Plus, Trash } from "lucide-react-native";
+import Toast from "react-native-toast-message";
+import ModalComponent from "../components/ModalComponent";
 
 const Home = () => {
   const [task, setTask] = useState("");
   const [tasks, setTasks] = useState([]);
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     const initialize = async () => {
@@ -27,10 +30,20 @@ const Home = () => {
     if (task.trim()) {
       await addTask(task);
       setTask("");
+      setModalVisible(false);
       const updatedTasks = await fetchAllTasks();
       setTasks(updatedTasks);
+      Toast.show({
+        type: "success",
+        text1: "✅ Tarea añadida",
+        text2: "Se ha agregado una nueva tarea",
+      });
     } else {
-      alert("⚠️ Escribe una tarea válida");
+      Toast.show({
+        type: "error",
+        text1: "⚠️ Error",
+        text2: "Escribe una tarea válida",
+      });
     }
   };
 
@@ -38,23 +51,16 @@ const Home = () => {
     await deleteTask(id);
     const updatedTasks = await fetchAllTasks();
     setTasks(updatedTasks);
+    Toast.show({
+      type: "info",
+      text1: "❌ Tarea eliminada",
+      text2: "La tarea ha sido eliminada correctamente",
+    });
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>To-Do List</Text>
-
-      <View style={styles.inputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Agregar nueva tarea"
-          value={task}
-          onChangeText={setTask}
-        />
-        <TouchableOpacity style={styles.addButton} onPress={handleAddTask}>
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
-      </View>
+      <Text style={styles.title}>TuTarea</Text>
 
       <FlatList
         data={tasks}
@@ -63,11 +69,25 @@ const Home = () => {
           <View style={styles.taskItem}>
             <Text style={styles.taskText}>{item.name}</Text>
             <TouchableOpacity onPress={() => handleDeleteTask(item.id)}>
-              <Text style={styles.deleteButton}>❌</Text>
+              <Trash size={24} color="red" />
             </TouchableOpacity>
           </View>
         )}
       />
+
+      <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
+        <Plus size={28} color="#FFF" />
+      </TouchableOpacity>
+
+      <ModalComponent
+        modalVisible={modalVisible}
+        setModalVisible={setModalVisible}
+        task={task}
+        setTask={setTask}
+        handleAddTask={handleAddTask}
+      />
+
+      <Toast />
     </View>
   );
 };
@@ -79,54 +99,42 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#FFD700",
-    textAlign: "center",
-    marginBottom: 20,
-  },
-  inputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFF",
-    borderRadius: 10,
-    borderWidth: 3,
-    borderColor: "#000",
-    paddingHorizontal: 10,
-    marginBottom: 20,
-  },
-  input: {
-    flex: 1,
-    padding: 12,
-    fontSize: 16,
-  },
-  addButton: {
-    backgroundColor: "#FFCC00",
-    borderRadius: 50,
-    borderWidth: 3,
-    borderColor: "#000",
-    padding: 10,
-  },
-  addButtonText: {
-    fontSize: 20,
-    fontWeight: "bold",
+    fontSize: 40,
+    fontWeight: 'bold',
+    color: '#FFD700',
+    textShadowColor: '#000',
+    textShadowOffset: { width: 2, height: 2 },
+    textShadowRadius: 2,
   },
   taskItem: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     backgroundColor: "#FFF",
     padding: 12,
     borderRadius: 10,
+    marginBottom: 12,
+    elevation: 2,
     borderWidth: 3,
     borderColor: "#000",
-    marginBottom: 10,
   },
   taskText: {
     fontSize: 16,
+    color: "#333",
+    flex: 1,
+    flexShrink: 1,
+    marginRight: 10,
   },
-  deleteButton: {
-    fontSize: 18,
-    color: "red",
+  addButton: {
+    position: "absolute",
+    right: 20,
+    bottom: 20,
+    backgroundColor: "#FFCC00",
+    borderRadius: 50,
+    padding: 15,
+    borderWidth: 3,
+    borderColor: "#000",
+    elevation: 5,
   },
 });
 
