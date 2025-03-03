@@ -1,5 +1,13 @@
+import { useEffect } from 'react';
+import { initDB } from './db/db';
 import AppNavigator from './navigation/AppNavigator';
 
 export default function App() {
-  return <AppNavigator/> ;
+
+  // inicializar la base de datos
+  useEffect(() => {
+    initDB();
+  }, []);
+
+  return <AppNavigator />;
 }
