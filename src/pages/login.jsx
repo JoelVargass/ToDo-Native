@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
-  View, Text, TextInput, TouchableOpacity, 
-  StyleSheet, Alert, Image, KeyboardAvoidingView, 
+  Text, TextInput, TouchableOpacity, 
+  StyleSheet, Alert, KeyboardAvoidingView, 
   ScrollView, Platform, TouchableWithoutFeedback, Keyboard 
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
@@ -14,7 +14,7 @@ const Login = ({ navigation }) => {
     if (email === 'usuario@ejemplo.com' && password === 'password123') {
       await SecureStore.setItemAsync('userToken', 'loggedIn');
       Alert.alert('Éxito', 'Inicio de sesión correcto');
-      navigation.replace('Home'); // 🔹 Redirige a Home
+      navigation.replace('Home');
     } else {
       Alert.alert('Error', 'Correo o contraseña incorrectos');
     }
@@ -28,7 +28,7 @@ const Login = ({ navigation }) => {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
 
-          <Text style={styles.title}>Bienvenido!</Text>
+          <Text style={styles.title}>Bienvenido a TuTarea!</Text>
             
           <TextInput 
             style={styles.input} 
@@ -80,6 +80,7 @@ const styles = StyleSheet.create({
     textShadowColor: '#000',
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 2,
+    marginBottom: 38,
   },
   subtitle: {
     fontSize: 14,

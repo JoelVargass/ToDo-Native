@@ -1,34 +1,37 @@
 import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  FlatList,
-  StyleSheet,
-} from "react-native";
+import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from "react-native";
 import Checkbox from 'expo-checkbox';
-const { initDB, fetchAllTasks, addTask, deleteTask, updateTask, updateTaskStatus } = require('../db/db');
-import { Plus, Trash } from "lucide-react-native";
+import { Plus, Trash, LogOut } from "lucide-react-native"; // Importa el ícono de LogOut
 import Toast from "react-native-toast-message";
 import ModalComponent from "../components/ModalComponent";
+import * as SecureStore from 'expo-secure-store'; // Asegúrate de tener este módulo
 
-const Home = () => {
+const { initDB, fetchAllTasks, addTask, deleteTask, updateTask, updateTaskStatus } = require('../db/db');
+
+const Home = ({ navigation }) => {
   const [task, setTask] = useState("");
   const [tasks, setTasks] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [editModalVisible, setEditModalVisible] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [selectedTab, setSelectedTab] = useState("all");
+  const [isLoading, setIsLoading] = useState(true); // Estado para controlar el estado de carga
 
   useEffect(() => {
     const initialize = async () => {
-      await initDB();
-      const loadedTasks = await fetchAllTasks();
-      setTasks(loadedTasks);
+      const token = await SecureStore.getItemAsync('userToken');
+      if (!token) {
+        navigation.replace('Login'); // Si no hay token, redirige a login
+      } else {
+        await initDB();
+        const loadedTasks = await fetchAllTasks();
+        setTasks(loadedTasks);
+        setIsLoading(false); // Cuando los datos estén cargados, cambia el estado de carga
+      }
     };
 
     initialize();
-  }, []);
+  }, [navigation]);
 
   const handleAddTask = async () => {
     if (task.trim()) {
@@ -86,6 +89,17 @@ const Home = () => {
     });
   };
 
+  const handleLogout = async () => {
+    try {
+      await SecureStore.deleteItemAsync('userToken');
+      console.log("Token eliminado correctamente");
+
+      navigation.replace('Login');
+    } catch (error) {
+      console.error("Error al eliminar el token", error);
+    }
+  };
+
   const filteredTasks = tasks.filter(task => {
     if (selectedTab === "all") return true;
     if (selectedTab === "pending") return task.status === "pendiente";
@@ -93,9 +107,18 @@ const Home = () => {
     return true;
   });
 
+  if (isLoading) {
+    return <ActivityIndicator size="large" color="#FFD700" style={styles.loader} />; // Mostrar indicador de carga mientras verificas el login y cargas tareas
+  }
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>TuTarea</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>TuTarea</Text>
+        <TouchableOpacity onPress={handleLogout}>
+          <LogOut size={28} color="#FFD700" />
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.tabsContainer}>
         <TouchableOpacity
@@ -123,11 +146,11 @@ const Home = () => {
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => (
           <View style={styles.taskItem}>
-                      <Checkbox
+            <Checkbox
               value={item.status === "completada"}
               onValueChange={() => handleToggleTaskStatus(item.id, item.status)}
               color={item.status === "completada" ? '#4CAF50' : '#FFCC00'}
-          />
+            />
             <TouchableOpacity
               onPress={() => { setEditingTask(item); setEditModalVisible(true); }}
               style={styles.taskTextContainer}
@@ -176,6 +199,17 @@ const styles = StyleSheet.create({
     backgroundColor: "#0077FF",
     padding: 20,
   },
+  loader: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
   title: {
     fontSize: 40,
     fontWeight: 'bold',
@@ -183,7 +217,6 @@ const styles = StyleSheet.create({
     textShadowColor: '#000',
     textShadowOffset: { width: 2, height: 2 },
     textShadowRadius: 2,
-    marginBottom: 20,
   },
   tabsContainer: {
     flexDirection: "row",
